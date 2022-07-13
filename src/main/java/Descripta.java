@@ -12,11 +12,10 @@ import java.util.Scanner;
 
 public class Descripta {
 
-    String encryptedData;
     List<BigInteger> encryptedList = new ArrayList<>();
     BigInteger modulo;
     BigInteger privateKey;
-    String oneLine = "";
+    String decryptedData = "";
 
     public Descripta(String keysFileName, String encryptedFileName, String destFileName)  {
         readFile(encryptedFileName);
@@ -25,9 +24,9 @@ public class Descripta {
         for (BigInteger line : encryptedList) {
             BigInteger originalChunk = line.modPow(getPrivateKey(), getModulo());
             TextChunk tx = new TextChunk(originalChunk);
-            oneLine += tx;
+            decryptedData += tx;
         }
-        byte[] decodedBytes = Base64.getDecoder().decode(oneLine);
+        byte[] decodedBytes = Base64.getDecoder().decode(decryptedData);
         String decodedString = new String(decodedBytes);
 
         try {
@@ -40,16 +39,10 @@ public class Descripta {
             }
 
             encryptedFileWriter.write(decodedString);
-
-
             encryptedFileWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public void setEncryptedData(String encryptedData) {
-        this.encryptedData = encryptedData;
     }
 
     public BigInteger getModulo() {
@@ -68,11 +61,7 @@ public class Descripta {
         this.privateKey = privateKey;
     }
 
-
-
     private void readFile(String sourceFileName) {
-        StringBuilder extractedData = new StringBuilder();
-
         try {
             File source = new File("src/main/resources/" + sourceFileName);
             Scanner sc = new Scanner(source);
@@ -86,8 +75,6 @@ public class Descripta {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-
-        setEncryptedData(extractedData.toString());
     }
 
     private void readPrivateKey(String keysFileName) {
