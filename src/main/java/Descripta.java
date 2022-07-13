@@ -2,6 +2,8 @@ import utils.TextChunk;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -14,22 +16,36 @@ public class Descripta {
     List<BigInteger> encryptedList = new ArrayList<>();
     BigInteger modulo;
     BigInteger privateKey;
-    BigInteger publicKey;
     String oneLine = "";
 
-    public Descripta(String publicKeyFile, String encryptedFileName, String destFileName)  {
+    public Descripta(String keysFileName, String encryptedFileName, String destFileName)  {
         readFile(encryptedFileName);
-        readKeys();
+        readPrivateKey(keysFileName);
 
         for (BigInteger line : encryptedList) {
             BigInteger originalChunk = line.modPow(getPrivateKey(), getModulo());
             TextChunk tx = new TextChunk(originalChunk);
             oneLine += tx;
         }
-        System.out.println(oneLine);
         byte[] decodedBytes = Base64.getDecoder().decode(oneLine);
         String decodedString = new String(decodedBytes);
-        System.out.println(decodedString);
+
+        try {
+            File encryptedFile = new File("src/main/resources/" + destFileName);
+            FileWriter encryptedFileWriter = new FileWriter(encryptedFile);
+            boolean isFileCreated = encryptedFile.createNewFile();
+
+            if (isFileCreated) {
+                System.out.println("Arquivo criado com sucesso!");
+            }
+
+            encryptedFileWriter.write(decodedString);
+
+
+            encryptedFileWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void setEncryptedData(String encryptedData) {
@@ -52,9 +68,6 @@ public class Descripta {
         this.privateKey = privateKey;
     }
 
-    public void setPublicKey(BigInteger publicKey) {
-        this.publicKey = publicKey;
-    }
 
 
     private void readFile(String sourceFileName) {
@@ -77,12 +90,23 @@ public class Descripta {
         setEncryptedData(extractedData.toString());
     }
 
-    private void readKeys() {
-        BigInteger modulo = new BigInteger("2314320674865135737");
-        BigInteger privateKey = new BigInteger("1420672095574243181");
-        BigInteger publicKey = new BigInteger("101");
-        setModulo(modulo);
-        setPrivateKey(privateKey);
-        setPublicKey(publicKey);
+    private void readPrivateKey(String keysFileName) {
+        try {
+            File privateKeyFile = new File("src/main/resources/" + keysFileName);
+            Scanner fileReader = new Scanner(privateKeyFile);
+            List<String> fileLines = new ArrayList<>();
+
+            while (fileReader.hasNextLine()) {
+                String data = fileReader.nextLine();
+                fileLines.add(data);
+            }
+            fileReader.close();
+
+            setModulo(new BigInteger(fileLines.get(0)));
+            setPrivateKey(new BigInteger(fileLines.get(1)));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

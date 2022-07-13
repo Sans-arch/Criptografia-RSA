@@ -12,18 +12,17 @@ public class Encripta {
   String originalData;
   String encodedData;
   BigInteger modulo;
-  BigInteger privateKey;
-  int publicKey;
+  BigInteger publicKey;
 
-  public Encripta(String publicKeyFile, String sourceFileName, String destFileName)  {
+  public Encripta(String keysFileName, String sourceFileName, String destFileName)  {
     readFile(sourceFileName);
     encodeToBase64();
 
-    readKeys();
+    readPublicKey(keysFileName);
+
     int chunkSize = TextChunk.blockSize(modulo);
     String[] arrayChunks = splitToNChar(getEncodedData(), chunkSize);
     List<BigInteger> encryptedChunks = new ArrayList<>();
-
 
     try {
       File encryptedFile = new File("src/main/resources/" + destFileName);
@@ -34,22 +33,20 @@ public class Encripta {
         System.out.println("Arquivo criado com sucesso!");
       }
 
-      // Converter cada chunk para BigInt (binario)
       for (String chunk : arrayChunks) {
         TextChunk textChunk = new TextChunk(chunk);
         BigInteger binaryChunk = textChunk.bigIntValue();
-        encryptedChunks.add(binaryChunk.modPow(binaryChunk, getModulo()));
+        encryptedChunks.add(binaryChunk.modPow(getPublicKey(), getModulo()));
       }
 
       for (BigInteger encryptedChunk : encryptedChunks) {
-        encryptedFileWriter.write(String.valueOf(encryptedChunk) + "\n");
+        encryptedFileWriter.write(encryptedChunk + "\n");
       }
 
       encryptedFileWriter.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
-
   }
 
   private static String[] splitToNChar(String text, int size) {
@@ -78,11 +75,11 @@ public class Encripta {
     this.originalData = originalData;
   }
 
-  public int getPublicKey() {
+  public BigInteger getPublicKey() {
     return publicKey;
   }
 
-  public void setPublicKey(int publicKey) {
+  public void setPublicKey(BigInteger publicKey) {
     this.publicKey = publicKey;
   }
 
@@ -94,21 +91,24 @@ public class Encripta {
     this.modulo = modulo;
   }
 
-  public BigInteger getPrivateKey() {
-    return privateKey;
-  }
+  private void readPublicKey(String keysFileName) {
+    try {
+      File publicKeyFile = new File("src/main/resources/" + keysFileName);
+      Scanner fileReader = new Scanner(publicKeyFile);
+      List<String> fileLines = new ArrayList<>();
 
-  public void setPrivateKey(BigInteger privateKey) {
-    this.privateKey = privateKey;
-  }
+      while (fileReader.hasNextLine()) {
+        String data = fileReader.nextLine();
+        fileLines.add(data);
+      }
+      fileReader.close();
 
-  private void readKeys() {
-    BigInteger modulo = new BigInteger("2314320674865135737");
-    BigInteger privateKey = new BigInteger("1420672095574243181");
-    int publicKey = 101;
-    setModulo(modulo);
-    setPrivateKey(privateKey);
-    setPublicKey(publicKey);
+      setModulo(new BigInteger(fileLines.get(0)));
+      setPublicKey(new BigInteger(fileLines.get(1)));
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   private void readFile(String sourceFileName) {
